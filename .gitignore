@@ -1,6 +1,8 @@
 QM9data/*
-*.tar.bz2
+plots/*
 __pycache__/*
-.DS_STore
+.DS_Store
+*.tar.bz2
 *.nb
 *.png
+*.pt

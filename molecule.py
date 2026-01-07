@@ -3,6 +3,7 @@ import torch
 import random
 random.seed(0)
 
+
 # atoms through the second period
 ATOM_DICT = {
     'H': 1,
@@ -124,4 +125,4 @@ class Molecule:
         new_molecule: Molecule = Molecule(self.n_atoms)
         new_molecule.set_attributes(self.idx, self.properties, self.z_list.detach().clone(), new_coords)
         return new_molecule
-        
+    

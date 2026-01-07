@@ -1,10 +1,7 @@
 from torch import nn, tensor, optim
-import torch
 
 # hyperparam
 learning_rate=0.01
-
-#linear_layer = nn.Linear(in_features=3, out_features=3)
 
 # activation
 relu = nn.ReLU()
@@ -14,8 +11,6 @@ gelu = nn.GELU()
 dropout_layer = nn.Dropout(p=0.5)
 
 linear_layer_2 = nn.Linear(in_features=3, out_features=1)
-
-#y_hat = linear_layer_2(relu(linear_layer(X)))
 
 class LinRegModel(nn.Module):
     def __init__(self, in_features, out_features):
