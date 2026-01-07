@@ -1,0 +1,4 @@
+QM9data/*
+*.tar.bz2
+__pycache__/*
+.DS_STore
