@@ -32,7 +32,6 @@ if __name__ == '__main__':
     # configure default datatype and device
     load_dotenv()
     set_default_dtype(float64)
-    use_mps: bool = False
     use_cuda: bool = True
     chkfile: str = 'model_checkpoint.pt'
 
@@ -79,15 +78,8 @@ if __name__ == '__main__':
 
     # set default device for training
     torch_device = get_default_device()
-    if use_mps and backends.mps.is_available():
-        torch_device = device('mps')
-        set_default_device(torch_device)
-        model = model.to(torch_device)
-        print('Using MPS device (Apple Silicon Metal API) for training.')
-    elif use_cuda and cuda.is_available():
+    if use_cuda and cuda.is_available():
         torch_device = device('cuda')
-        set_default_device(torch_device)
-        model = model.to(torch_device)
         print(f'Using CUDA ({cuda.get_device_name(0)}) for training.')
     else:
         set_default_device(torch_device)
@@ -98,4 +90,4 @@ if __name__ == '__main__':
     atexit.register(cleanup_wrapper(model, chkfile))
 
     print('Beginning training:')
-    train_model(model, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, lr=wandb.config.learning_rate, chkfile=chkfile)
+    train_model(model, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, lr=wandb.config.learning_rate, chkfile=chkfile, torch_device=torch_device)
