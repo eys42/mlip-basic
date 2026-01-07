@@ -46,10 +46,14 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
     for n in tqdm(range(1, epochs + 1)):
         train_loss: float = train_epoch(model, train_dataset, optimizer, loss_fn, torch_device=torch_device)
         val_loss: float = evaluate_model(model, val_dataset, loss_fn, torch_device=torch_device)
-        wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss})
         if n % 10 == 0 or n == 1 or n == epochs:
             save(model.state_dict(), chkfile)
-            print(f'Epoch {n:02d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2)')
+            test_loss: float = evaluate_model(model, test_dataset, loss_fn, torch_device=torch_device)
+            print(f'Epoch {n:03d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2), Test loss={test_loss:.4f} (MSE, Ha^2)')
+            wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss, 'test_loss': test_loss})
+        else:
+            print(f'Epoch {n:03d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2)')
+            wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss})
     model.load_state_dict(load(chkfile))
     test_loss: float = evaluate_model(model, test_dataset, loss_fn, torch_device=torch_device)
     print(f'Test loss={test_loss:.4f} (MSE, Ha^2)')
