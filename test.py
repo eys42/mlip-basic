@@ -56,7 +56,6 @@ for n in range(epochs):
 class FeedForwardNetwork(nn.Module):
     def __init__(self, embedding_dim, ffn_dim):
         super().__init__()
-
         self.layer1 = nn.Linear(embedding_dim, ffn_dim)
         self.activation = nn.GELU()
         self.layer2 = nn.Linear(ffn_dim, embedding_dim)
@@ -66,9 +65,11 @@ class FeedForwardNetwork(nn.Module):
         x = self.activation(x)
         return self.layer2(x)
 
+"""
 if torch.backends.mps.is_available():
     mps_device = torch.device("mps")
     x = torch.ones(1, device=mps_device)
     print(x)
 else:
-    print ("MPS device not found.")
+    print("MPS device not found.")
+"""
