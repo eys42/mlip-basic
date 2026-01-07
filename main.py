@@ -8,6 +8,7 @@ from uuid import uuid4
 from dotenv import load_dotenv
 import wandb
 import atexit
+import sys
 
 
 def cleanup_wrapper(model: Model, chkfile: str):
@@ -29,6 +30,18 @@ def cleanup_wrapper(model: Model, chkfile: str):
     return cleanup
 
 if __name__ == '__main__':
+    # get args on command line
+    args = sys.argv[1:]
+    args_dict = {arg.split('=')[0]: arg.split('=')[1] for arg in args}
+    config = {
+        'batch_size': int(args_dict.get('--batch-size', 32)),
+        'epochs': int(args_dict.get('--epochs', 50)),
+        'learning_rate': float(args_dict.get('--learning-rate', 0.001)),
+        'nhead': int(args_dict.get('--nhead', 4)),
+        'd_model': int(args_dict.get('--d-model', 64)),
+        'num_layers': int(args_dict.get('--num-layers', 4)),
+        'Z_MAX': int(args_dict.get('--Z-MAX', 9))
+    }
     # configure default datatype and device
     load_dotenv()
     set_default_dtype(float64)
@@ -41,15 +54,7 @@ if __name__ == '__main__':
     wandb.init(
         project='mlip-basic-qm9',
         name=wandbname,
-        config={
-            'batch_size': 32,
-            'epochs': 50,
-            'learning_rate': 0.001,
-            'nhead': 4,
-            'd_model': 64,
-            'num_layers': 4,
-            'Z_MAX': 9
-        }
+        config=config
     )
 
     # load dataset
