@@ -5,7 +5,7 @@ from torch import load, save
 
 class QM9DataImport:
     @staticmethod
-    def import_data_from_XYZ(folder: str, generate_combined_input_tensor: bool = False) -> list[Molecule]:
+    def import_data_from_XYZ(folder: str, generate_combined_input_tensor: bool = False, Z_max: int = 9) -> list[Molecule]:
         """
         Imports the entire QM9 dataset from XYZ files in the given folder.
 
@@ -13,6 +13,8 @@ class QM9DataImport:
         :type folder: str    
         :param generate_combined_input_tensor: Whether to generate combined input tensor for each molecule
         :type generate_combined_input_tensor: bool
+        :param Z_max: Maximum atomic number for one-hot encoding
+        :type Z_max: int
         :return: List of Molecule objects of the QM9 dataset
         :rtype: list[Molecule]
         """
@@ -26,7 +28,7 @@ class QM9DataImport:
             try:
                 molecule = QM9DataImport.molecule_from_XYZ(filename, folder)
                 if generate_combined_input_tensor:
-                    molecule.generate_combined_input_tensor()
+                    molecule.generate_combined_input_tensor(Z_max=Z_max)
                 dataset.append(molecule)
             except Exception:
                 print(filename)
@@ -83,7 +85,7 @@ class QM9DataImport:
         print(f'Number of molecules saved: {len(dataset)}')
 
     @staticmethod
-    def load_dataset_from_pt(filepath: str, generate_combined_input_tensor: bool = False) -> list[Molecule]:
+    def load_dataset_from_pt(filepath: str, generate_combined_input_tensor: bool = False, Z_max: int = 9) -> list[Molecule]:
         """
         Loads the entire QM9 dataset from a .pt file.
         
@@ -91,6 +93,8 @@ class QM9DataImport:
         :type filepath: str
         :param generate_combined_input_tensor: Whether to generate combined input tensor for each molecule
         :type generate_combined_input_tensor: bool
+        :param Z_max: Maximum atomic number for one-hot encoding
+        :type Z_max: int
         :return: List of Molecule objects
         :rtype: list[Molecule]
         """
@@ -102,15 +106,8 @@ class QM9DataImport:
             molecule.set_attributes(molecule_dict['idx'], molecule_dict['properties'], molecule_dict['z_list'], molecule_dict['coords'])
             dataset.append(molecule)
             if generate_combined_input_tensor:
-                molecule.generate_combined_input_tensor()
+                molecule.generate_combined_input_tensor(Z_max=Z_max)
         t2: float = time()
         print(f'Time to load dataset from .pt file: {t2 - t1:.1f} seconds')
         print(f'Number of molecules loaded: {len(dataset)}')
         return dataset
-
-if __name__ == '__main__':
-    # QM9_dataset = QM9DataImport.import_data_from_XYZ('QM9data', generate_combined_input_tensor=True)
-    # QM9DataImport.save_dataset_to_pt(QM9_dataset)
-    QM9_dataset: list[Molecule] = QM9DataImport.load_dataset_from_pt(
-        path.join(getcwd(), 'QM9_dataset.pt'),
-        generate_combined_input_tensor=True)

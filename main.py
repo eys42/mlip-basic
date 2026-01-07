@@ -11,10 +11,21 @@ import atexit
 
 
 def cleanup_wrapper(model: Model, chkfile: str):
+    """
+    Generates a cleanup function to save model checkpoint and log W&B artifact on exit.
+    
+    :param model: Current model
+    :type model: Model
+    :param chkfile: Path to checkpoint file
+    :type chkfile: str
+    """
     def cleanup() -> None:
-        wandb.finish()
         save(model.state_dict(), chkfile)
-        print(f'W&B exited and model checkpoint saved to {chkfile} on exit.')
+        artifact = wandb.Artifact('mlip-basic-qm9', type='model')
+        artifact.add_file('model_checkpoint.pt')
+        wandb.log_artifact(artifact)
+        wandb.finish()
+        print(f'Model checkpoint saved to {chkfile} and W&B artifact logged on exit.')
     return cleanup
 
 if __name__ == '__main__':
@@ -23,11 +34,14 @@ if __name__ == '__main__':
     set_default_dtype(float64)
     use_mps: bool = False
     use_cuda: bool = True
-    chkfile = 'model_checkpoint.pt'
+    chkfile: str = 'model_checkpoint.pt'
 
+    # initialize wandb
+    load_wandb_artifact: bool = True
+    wandbname = f'mlip-basic-qm9_{str(uuid4())}'
     wandb.init(
         project='mlip-basic-qm9',
-        name=f'mlip-basic-qm9_{str(uuid4())}',
+        name=wandbname,
         config={
             'batch_size': 32,
             'epochs': 50,
@@ -44,11 +58,11 @@ if __name__ == '__main__':
     if path.exists(path.join(getcwd(), 'QM9_dataset.pt')):
         QM9_dataset = QM9DataImport.load_dataset_from_pt(
             path.join(getcwd(), 'QM9_dataset.pt'),
-            generate_combined_input_tensor=True)
+            generate_combined_input_tensor=True, Z_max=wandb.config.Z_MAX)
     else:
         QM9_dataset = QM9DataImport.import_data_from_XYZ(
             'QM9data',
-            generate_combined_input_tensor=True)
+            generate_combined_input_tensor=True, Z_max=wandb.config.Z_MAX)
         QM9DataImport.save_dataset_to_pt(QM9_dataset)
     
     # initialize model
@@ -56,6 +70,12 @@ if __name__ == '__main__':
     if path.exists(chkfile):
         model.load_state_dict(load(chkfile))
         print(f'Loaded model checkpoint from {chkfile}')
+    elif load_wandb_artifact:
+        api = wandb.Api()
+        artifact = wandb.use_artifact('mlip-basic-qm9:latest', type='model')
+        artifact_dir = artifact.download()
+        model.load_state_dict(load(path.join(artifact_dir, 'model_checkpoint.pt')))
+        print(f'Loaded model checkpoint from W&B artifact mlip-basic-qm9:latest')
 
     # set default device for training
     torch_device = get_default_device()
@@ -68,11 +88,12 @@ if __name__ == '__main__':
         torch_device = device('cuda')
         set_default_device(torch_device)
         model = model.to(torch_device)
-        print(f'Using CUDA {cuda.get_device_name(0)} for training.')
+        print(f'Using CUDA ({cuda.get_device_name(0)}) for training.')
     else:
         set_default_device(torch_device)
         print(f'Using {torch_device.type} for training.')
     
+    # start wandb logging and register cleanup function
     wandb.watch(model, log_freq=100)
     atexit.register(cleanup_wrapper(model, chkfile))
 
