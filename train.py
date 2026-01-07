@@ -30,11 +30,11 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
     val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested)
     
     # dummy input to allocate space on GPU
-    if get_default_device().type == 'mps' or get_default_device().type == 'cuda':
-        model = model.to(get_default_device())
-        with no_grad():
-            dummy_input = randn(1, 5, 12).to(get_default_device()) 
-            _ = model(dummy_input)
+    # if get_default_device().type == 'mps' or get_default_device().type == 'cuda':
+    #     model = model.to(get_default_device())
+    #     with no_grad():
+    #         dummy_input = randn(1, 5, 12).to(get_default_device()) 
+    #         _ = model(dummy_input)
     
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=lr)
     loss_fn: nn.MSELoss = nn.MSELoss()
