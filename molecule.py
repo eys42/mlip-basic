@@ -1,22 +1,6 @@
 import numpy as np
 import torch
-import random
-random.seed(0)
-
-
-# atoms through the second period
-ATOM_DICT = {
-    'H': 1,
-    'He': 2,
-    'Li': 3,
-    'Be': 4,
-    'B': 5,
-    'C': 6,
-    'N': 7,
-    'O': 8,
-    'F': 9,
-    'Ne': 10
-}
+np.random.seed(0)
 
 """
 Properties schema:
@@ -28,6 +12,19 @@ Properties schema:
 12: H (enthalpy at 298.15 K, Hartree), 13: G (Gibbs free energy at 298.15 K, Hartree), 14: C_v (heat capacity at 298.15 K, cal/(mol K))
 """
 class Molecule:
+    # atomic Z values H-F
+    atom_dict = {
+        'H': 1,
+        'He': 2,
+        'Li': 3,
+        'Be': 4,
+        'B': 5,
+        'C': 6,
+        'N': 7,
+        'O': 8,
+        'F': 9,
+    }
+
     def __init__(self, n_atoms: int, properties: list[str] | None = None) -> None:
         self.n_atoms: int = n_atoms
         if properties is not None:
@@ -35,7 +32,6 @@ class Molecule:
             self.properties: torch.Tensor = torch.tensor([float(property) for property in properties[2:]], dtype=torch.float64)
         self.z_list: torch.Tensor = torch.zeros(n_atoms, dtype=torch.int64)
         self.coords: torch.Tensor = torch.zeros((3, n_atoms), dtype=torch.float64)
-        self.dist_matrix: torch.Tensor = torch.zeros((n_atoms, n_atoms), dtype=torch.float64)
     
     def set_attributes(self, idx: int, properties: torch.Tensor, z_list: torch.Tensor, coords: torch.Tensor) -> None:
         """
@@ -64,7 +60,7 @@ class Molecule:
         """
         for (i, line) in enumerate(xyz_list):
             parts: list[str] = line.split()
-            self.z_list[i] = ATOM_DICT[parts[0]]
+            self.z_list[i] = self.atom_dict[parts[0]]
             try:
                 self.coords[:,i] = torch.tensor([float(parts[1]), float(parts[2]), float(parts[3])], dtype=torch.float64)
             except Exception as e:
@@ -76,7 +72,11 @@ class Molecule:
     def generate_distance_matrix(self, print_matrix: bool = True) -> None:
         """
         Generates distance matrix for the molecule.
+
+        :param print_matrix: Whether to print the distance matrix
+        :type print_matrix: bool
         """
+        self.dist_matrix: torch.Tensor = torch.zeros((self.n_atoms, self.n_atoms), dtype=torch.float64)
         for i in range(self.n_atoms):
             for j in range(i, self.n_atoms):
                 dist = torch.linalg.vector_norm(self.coords[:,i] - self.coords[:,j])
@@ -92,9 +92,9 @@ class Molecule:
         :return: New Molecule instance with rotated coordinates
         :rtype: Molecule
         """
-        theta = random.uniform(0, 2 * np.pi)
-        phi = random.uniform(0, 2 * np.pi)
-        psi = random.uniform(0, 2 * np.pi)
+        theta = np.random.uniform(0, 2 * np.pi)
+        phi = np.random.uniform(0, 2 * np.pi)
+        psi = np.random.uniform(0, 2 * np.pi)
         costheta, sintheta = np.cos(theta), np.sin(theta)
         cosphi, sinphi = np.cos(phi), np.sin(phi)
         cospsi, sinpsi = np.cos(psi), np.sin(psi)
@@ -116,13 +116,37 @@ class Molecule:
         :return: New Molecule instance with translated coordinates
         :rtype: Molecule
         """
-        translation_vector = torch.tensor([random.uniform(-1, 1),
-                                           random.uniform(-1, 1),
-                                           random.uniform(-1, 1)], dtype=torch.float64)
+        translation_vector = torch.tensor([np.random.uniform(-1, 1),
+                                           np.random.uniform(-1, 1),
+                                           np.random.uniform(-1, 1)], dtype=torch.float64)
         translation_vector = translation_vector / torch.linalg.vector_norm(translation_vector)
-        translation_vector = translation_vector * random.uniform(0, 1)
+        translation_vector = translation_vector * np.random.uniform(0, 1)
         new_coords = self.coords + translation_vector.unsqueeze(1)
         new_molecule: Molecule = Molecule(self.n_atoms)
         new_molecule.set_attributes(self.idx, self.properties, self.z_list.detach().clone(), new_coords)
         return new_molecule
     
+    def one_hot_encode_Z(self, Z_max: int = 9) -> torch.Tensor:
+        """
+        One-hot encodes the atomic numbers (Z values) of the molecule.
+
+        :param Z_max: Maximum atomic number to consider for one-hot encoding
+        :type Z_max: int
+        :return: One-hot encoded tensor of shape (Z_max, n_atoms)
+        :rtype: torch.Tensor
+        """
+        Z_tensor = torch.zeros((Z_max, self.n_atoms), dtype=torch.float64)
+        for i in range(self.n_atoms):
+            Z: int | float = self.z_list[i].item()
+            Z_tensor[int(Z) - 1, i] = 1.0
+        return Z_tensor
+
+    def generate_combined_input_tensor(self, Z_max: int = 9) -> None:
+        """
+        Generates a combined input tensor of shape (Z_max + 3, n_atoms).
+        The first Z_max rows are the one-hot encoded atomic numbers, and the last 3 rows are the x, y, z coordinates.
+
+        :param Z_max: Maximum atomic number to consider for one-hot encoding
+        :type Z_max: int
+        """
+        self.combined_input_tensor = torch.cat((self.one_hot_encode_Z(Z_max), self.coords), dim=0)
