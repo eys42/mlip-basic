@@ -43,7 +43,7 @@ y_true = tensor([5.])
 
 for n in range(epochs):
     # perform forwar pass - calls forward()
-    y_hat = model(X
+    y_hat = model(X)
     loss = loss_fn(y_hat, y_true)
     optimizer.zero_grad()
     loss.backward()
