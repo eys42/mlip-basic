@@ -23,5 +23,5 @@ class MLIPDataset(utils.data.Dataset):
     
 def collate_nested(batch: list[tuple[Tensor, Tensor]]) -> tuple[Tensor, Tensor]:
     inputs, outputs = zip(*batch)
-    return (nested.as_nested_tensor(list(inputs), layout=jagged).contiguous().to(get_default_device()).to(get_default_dtype()),
-    stack(list(outputs)).to(get_default_device()).to(get_default_dtype()))
+    return (nested.as_nested_tensor(list(inputs), layout=jagged).contiguous().to(get_default_dtype()),
+    stack(list(outputs)).to(get_default_dtype()))

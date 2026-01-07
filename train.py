@@ -45,13 +45,13 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
         model = model.to(torch_device)
     for n in tqdm(range(1, epochs + 1)):
         train_loss: float = train_epoch(model, train_dataset, optimizer, loss_fn, torch_device=torch_device)
-        val_loss: float = evaluate_model(model, val_dataset, loss_fn)
+        val_loss: float = evaluate_model(model, val_dataset, loss_fn, torch_device=torch_device)
         wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss})
         if n % 10 == 0 or n == 1 or n == epochs:
             save(model.state_dict(), chkfile)
             print(f'Epoch {n:02d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2)')
     model.load_state_dict(load(chkfile))
-    test_loss: float = evaluate_model(model, test_dataset, loss_fn)
+    test_loss: float = evaluate_model(model, test_dataset, loss_fn, torch_device=torch_device)
     print(f'Test loss={test_loss:.4f} (MSE, Ha^2)')
 
 def train_epoch(model: Model, dataset: utils.data.DataLoader, optimizer: optim.Optimizer, loss_fn: nn.Module, torch_device: device | None = None) -> float:
@@ -85,7 +85,7 @@ def train_epoch(model: Model, dataset: utils.data.DataLoader, optimizer: optim.O
     return total_loss / len(dataset)
 
 @no_grad()
-def evaluate_model(model: Model, dataset: utils.data.DataLoader, loss_fn: nn.Module) -> float:
+def evaluate_model(model: Model, dataset: utils.data.DataLoader, loss_fn: nn.Module, torch_device: device | None = None) -> float:
     """
     Docstring for evaluate_model
     
@@ -95,11 +95,16 @@ def evaluate_model(model: Model, dataset: utils.data.DataLoader, loss_fn: nn.Mod
     :type dataset: utils.data.DataLoader
     :param loss_fn: Description
     :type loss_fn: nn.Module
+    :param torch_device: Description
+    :type torch_device: device | None
     :return: Description
     :rtype: float
     """
     total_loss: float = 0.0
     for x_batch, y_batch in dataset:
+        if torch_device is not None:
+            x_batch = x_batch.to(torch_device)
+            y_batch = y_batch.to(torch_device)
         y_hat = model(x_batch)
         loss = loss_fn(y_hat.view(-1), y_batch.view(-1))
         total_loss += loss.item() * y_batch.size(0)
