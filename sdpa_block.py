@@ -1,6 +1,5 @@
-import torch.nn as nn
+from torch import nn, Tensor
 import torch.nn.functional as F
-import torch
 
 class SDPABlock(nn.Module):
     def __init__(self, d_model: int, nhead: int, dim_feedforward: int, batch_first: bool = True) -> None:
@@ -24,7 +23,7 @@ class SDPABlock(nn.Module):
             nn.Linear(dim_feedforward, d_model)
         )
     
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         result = x
         x = self.norm1(x)
         q = self.q_proj(x)

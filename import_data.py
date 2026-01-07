@@ -1,7 +1,7 @@
-import os
-import time
+from os import listdir, path, getcwd
+from time import time
 from molecule import Molecule
-import torch
+from torch import load, save
 
 class QM9DataImport:
     @staticmethod
@@ -17,8 +17,8 @@ class QM9DataImport:
         :rtype: list[Molecule]
         """
         filenames: list[str] = []
-        t1: float = time.time()
-        for filename in os.listdir(os.path.join(os.getcwd(), folder)):
+        t1: float = time()
+        for filename in listdir(path.join(getcwd(), folder)):
             filenames.append(filename)
         dataset: list[Molecule] = []
         n_problematic = 0
@@ -32,7 +32,7 @@ class QM9DataImport:
                 print(filename)
                 print(Exception)
                 n_problematic += 1
-        t2: float = time.time()
+        t2: float = time()
         print(f'Time to import dataset: {t2 - t1:.1f} seconds')
         print(f'Number of problematic files: {n_problematic}')
         print(f'Number of molecules imported: {len(dataset)}')
@@ -51,7 +51,7 @@ class QM9DataImport:
         :return: Molecule object
         :rtype: Molecule
         """
-        with open(os.path.join(os.getcwd(), folder, filename)) as file:
+        with open(path.join(getcwd(), folder, filename)) as file:
             n_atoms: int = int(file.readline())
             lines: list[str] = file.readlines()
             properties: list[str] = lines[0].split()
@@ -67,7 +67,7 @@ class QM9DataImport:
         :param dataset: List of Molecule objects
         :type dataset: list[Molecule]
         """
-        t1: float = time.time()
+        t1: float = time()
         dataset_as_list: list[dict] = []
         for molecule in dataset:
             dataset_as_list.append({
@@ -77,8 +77,8 @@ class QM9DataImport:
                 'z_list': molecule.z_list,
                 'coords': molecule.coords
             })
-        torch.save(dataset_as_list, os.path.join(os.getcwd(), 'QM9_dataset.pt'))
-        t2: float = time.time()
+        save(dataset_as_list, path.join(getcwd(), 'QM9_dataset.pt'))
+        t2: float = time()
         print(f'Time to save dataset as .pt file: {t2 - t1:.1f} seconds')
         print(f'Number of molecules saved: {len(dataset)}')
 
@@ -94,8 +94,8 @@ class QM9DataImport:
         :return: List of Molecule objects
         :rtype: list[Molecule]
         """
-        t1: float = time.time()
-        dataset_as_list = torch.load(filepath)
+        t1: float = time()
+        dataset_as_list = load(filepath)
         dataset: list[Molecule] = []
         for molecule_dict in dataset_as_list:
             molecule = Molecule(molecule_dict['n_atoms'])
@@ -103,7 +103,7 @@ class QM9DataImport:
             dataset.append(molecule)
             if generate_combined_input_tensor:
                 molecule.generate_combined_input_tensor()
-        t2: float = time.time()
+        t2: float = time()
         print(f'Time to load dataset from .pt file: {t2 - t1:.1f} seconds')
         print(f'Number of molecules loaded: {len(dataset)}')
         return dataset
@@ -112,5 +112,5 @@ if __name__ == '__main__':
     # QM9_dataset = QM9DataImport.import_data_from_XYZ('QM9data', generate_combined_input_tensor=True)
     # QM9DataImport.save_dataset_to_pt(QM9_dataset)
     QM9_dataset: list[Molecule] = QM9DataImport.load_dataset_from_pt(
-        os.path.join(os.getcwd(), 'QM9_dataset.pt'),
+        path.join(getcwd(), 'QM9_dataset.pt'),
         generate_combined_input_tensor=True)

@@ -1,5 +1,4 @@
-import torch.nn as nn
-import torch
+from torch import Tensor, nn
 from sdpa_block import SDPABlock
 
 class Model(nn.Module):
@@ -10,7 +9,7 @@ class Model(nn.Module):
         self.transformer = nn.Sequential(*[self.transformer_layer for _ in range(num_layers)])
         #self.transformer = nn.ModuleList([self.transformer_layer for _ in range(num_layers)])
         self.regressor = nn.Linear(d_model, 1)
-    def forward(self, x: torch.Tensor) ->  torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         if not x.is_contiguous():
             x = x.contiguous()
         h = self.embedding(x)
