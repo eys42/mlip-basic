@@ -1,13 +1,13 @@
 from sklearn.model_selection import train_test_split
-from torch import nn, utils, optim, save, load, no_grad, manual_seed
+from torch import nn, utils, optim, save, load, no_grad, manual_seed, get_default_device, randn
 from model import Model
 from dataset import MLIPDataset, collate_nested
 from molecule import Molecule
 from tqdm import tqdm
-
+import wandb
 manual_seed(0)
 
-def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, lr: float = 0.001) -> None:
+def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, lr: float = 0.001, chkfile: str = 'model_checkpoint.pt') -> None:
     """
     Docstring for train_model
     
@@ -29,15 +29,23 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
     test_dataset = utils.data.DataLoader(MLIPDataset(test_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested)
     val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested)
     
+    # dummy input to allocate space on GPU
+    if get_default_device().type == 'mps' or get_default_device().type == 'cuda':
+        model = model.to(get_default_device())
+        with no_grad():
+            dummy_input = randn(1, 5, 12).to(get_default_device()) 
+            _ = model(dummy_input)
+    
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=lr)
     loss_fn: nn.MSELoss = nn.MSELoss()
     for n in tqdm(range(1, epochs + 1)):
         train_loss: float = train_epoch(model, train_dataset, optimizer, loss_fn)
         val_loss: float = evaluate_model(model, val_dataset, loss_fn)
+        wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss})
         if n % 10 == 0 or n == 1 or n == epochs:
-            save(model.state_dict(), 'model_checkpoint.pt')
+            save(model.state_dict(), chkfile)
             print(f'Epoch {n:02d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2)')
-    model.load_state_dict(load('model_checkpoint.pt'))
+    model.load_state_dict(load(chkfile))
     test_loss: float = evaluate_model(model, test_dataset, loss_fn)
     print(f'Test loss={test_loss:.4f} (MSE, Ha^2)')
 

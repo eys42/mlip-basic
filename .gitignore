@@ -6,3 +6,6 @@ __pycache__/*
 *.nb
 *.png
 *.pt
+.env
+.zshrc
+wandb/*
