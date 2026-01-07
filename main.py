@@ -40,9 +40,18 @@ if __name__ == '__main__':
     )
 
     # load dataset
-    QM9_dataset: list[Molecule] = QM9DataImport.load_dataset_from_pt(
-        path.join(getcwd(), 'QM9_dataset.pt'),
-        generate_combined_input_tensor=True)
+    QM9_dataset: list[Molecule]
+    if path.exists(path.join(getcwd(), 'QM9_dataset.pt')):
+        QM9_dataset = QM9DataImport.load_dataset_from_pt(
+            path.join(getcwd(), 'QM9_dataset.pt'),
+            generate_combined_input_tensor=True)
+    else:
+        QM9_dataset = QM9DataImport.import_data_from_XYZ(
+            'QM9data',
+            generate_combined_input_tensor=True)
+        QM9DataImport.save_dataset_to_pt(QM9_dataset)
+    
+    # initialize model
     model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
     if path.exists(chkfile):
         model.load_state_dict(load(chkfile))

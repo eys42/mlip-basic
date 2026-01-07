@@ -132,21 +132,21 @@ class Molecule:
 
         :param Z_max: Maximum atomic number to consider for one-hot encoding
         :type Z_max: int
-        :return: One-hot encoded tensor of shape (Z_max, n_atoms)
+        :return: One-hot encoded tensor of shape (n_atoms, Z_max)
         :rtype: Tensor
         """
-        Z_tensor = zeros((Z_max, self.n_atoms), dtype=get_default_dtype())
+        Z_tensor = zeros((self.n_atoms, Z_max), dtype=get_default_dtype())
         for i in range(self.n_atoms):
             Z: int | float = self.z_list[i].item()
-            Z_tensor[int(Z) - 1, i] = 1.0
+            Z_tensor[i, int(Z) - 1] = 1.0
         return Z_tensor
 
     def generate_combined_input_tensor(self, Z_max: int = 9) -> None:
         """
-        Generates a combined input tensor of shape (Z_max + 3, n_atoms).
-        The first Z_max rows are the one-hot encoded atomic numbers, and the last 3 rows are the x, y, z coordinates.
+        Generates a combined input tensor of shape (n_atoms, Z_max + 3).
+        The first Z_max columns are the one-hot encoded atomic numbers, and the last 3 columns are the x, y, z coordinates.
 
         :param Z_max: Maximum atomic number to consider for one-hot encoding
         :type Z_max: int
         """
-        self.combined_input_tensor = cat((self.one_hot_encode_Z(Z_max), self.coords), dim=0)
+        self.combined_input_tensor = cat((self.one_hot_encode_Z(Z_max), self.coords.T), dim=1)

@@ -13,7 +13,7 @@ class MLIPDataset(utils.data.Dataset):
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         molecule: Molecule = self.molecules[idx]
         # TODO: fix this behavior - start out with a transposed tensor
-        return (molecule.combined_input_tensor.T, molecule.properties[10])
+        return (molecule.combined_input_tensor, molecule.properties[10])
     
     def __getitems__(self, idxs: list[int]) -> list[tuple[Tensor, Tensor]]:
         samples: list[tuple] = []
