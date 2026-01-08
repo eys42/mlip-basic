@@ -10,13 +10,14 @@ import wandb
 import atexit
 import sys
 
-
 def cleanup_wrapper(model: Model, optimizer: optim.Optimizer, chkfile: str):
     """
-    Generates a cleanup function to save model checkpoint and log W&B artifact on exit.
+    Returns a cleanup function to save model checkpoint and log W&B artifact on exit.
     
     :param model: Current model
     :type model: Model
+    :param optimizer: Current optimizer
+    :type optimizer: optim.Optimizer
     :param chkfile: Path to checkpoint file
     :type chkfile: str
     """
@@ -53,6 +54,8 @@ if __name__ == '__main__':
 
     # initialize wandb
     load_wandb_artifact: bool = True
+    if '--use-wandb-artifact' in args_dict and args_dict['--use-wandb-artifact'].lower() == 'false':
+        load_wandb_artifact = False
     wandbname = f'mlip-basic-qm9_{str(uuid4())}'
     wandb.init(
         project='mlip-basic-qm9',
@@ -84,7 +87,7 @@ if __name__ == '__main__':
             artifact_version = args_dict['--wandb-artifact-version']
         artifact = wandb.use_artifact(f'mlip-basic-qm9:{artifact_version}', type='model')
         artifact_dir = artifact.download()
-        model.load_state_dict(load(path.join(artifact_dir, 'model_checkpoint.pt')))
+        model.load_state_dict(load(path.join(artifact_dir, 'model_checkpoint.pt'), map_location=get_default_device()))
         print(f'Loaded model checkpoint from W&B artifact mlip-basic-qm9:{artifact_version}')
     # set default device for training
     torch_device = get_default_device()
