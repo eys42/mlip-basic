@@ -42,6 +42,7 @@ if __name__ == '__main__':
         'num_layers': int(args_dict.get('--num-layers', 4)),
         'Z_MAX': int(args_dict.get('--Z-MAX', 9))
     }
+    
     # configure default datatype and device
     load_dotenv()
     set_default_dtype(float64)
@@ -71,16 +72,18 @@ if __name__ == '__main__':
     
     # initialize model
     model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
-    if path.exists(chkfile):
+    if path.exists(chkfile) and not '--load-wandb-artifact' in args_dict:
         model.load_state_dict(load(chkfile))
         print(f'Loaded model checkpoint from {chkfile}')
     elif load_wandb_artifact:
         api = wandb.Api()
-        artifact = wandb.use_artifact('mlip-basic-qm9:latest', type='model')
+        artifact_version = 'latest'
+        if '--wandb-artifact-version' in args_dict:
+            artifact_version = args_dict['--wandb-artifact-version']
+        artifact = wandb.use_artifact(f'mlip-basic-qm9:{artifact_version}', type='model')
         artifact_dir = artifact.download()
         model.load_state_dict(load(path.join(artifact_dir, 'model_checkpoint.pt')))
-        print(f'Loaded model checkpoint from W&B artifact mlip-basic-qm9:latest')
-
+        print(f'Loaded model checkpoint from W&B artifact mlip-basic-qm9:{artifact_version}')
     # set default device for training
     torch_device = get_default_device()
     if use_cuda and cuda.is_available():

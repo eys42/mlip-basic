@@ -9,35 +9,30 @@ manual_seed(0)
 
 def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, lr: float = 0.001, chkfile: str = 'model_checkpoint.pt', torch_device: device | None = None) -> None:
     """
-    Docstring for train_model
+    Load data and train model.
     
-    :param model: Description
+    :param model: Model to be trained
     :type model: Model
-    :param dataset: Description
+    :param dataset: list of Molecule objects representing the QM9 dataset
     :type dataset: list[Molecule]
-    :param epochs: Description
+    :param epochs: number of training epochs
     :type epochs: int
-    :param lr: Description
+    :param lr: learn rate
     :type lr: float
-    :param chkfile: Description
+    :param chkfile: path to checkpoint file
     :type chkfile: str
-    :param torch_device: Description
+    :param torch_device: pytorch device to use for training
     :type torch_device: device | None
     """
     # make train, test, val splits (train = 80%, test = 10%, val = 10%)
     train_molecules, test_molecules = train_test_split(dataset, test_size=0.2, random_state=0, shuffle=False)
     test_molecules, val_molecules = train_test_split(test_molecules, test_size=0.5, random_state=0, shuffle=False)
     train_dataset = utils.data.DataLoader(MLIPDataset(train_molecules), batch_size=batch_size, shuffle=True, collate_fn=collate_nested,
-                                          generator=Generator(device='cpu'), pin_memory=True)
-    test_dataset = utils.data.DataLoader(MLIPDataset(test_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested)
-    val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested)
-    
-    # dummy input to allocate space on GPU
-    # if get_default_device().type == 'mps' or get_default_device().type == 'cuda':
-    #     model = model.to(get_default_device())
-    #     with no_grad():
-    #         dummy_input = randn(1, 5, 12).to(get_default_device()) 
-    #         _ = model(dummy_input)
+                                          generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
+    test_dataset = utils.data.DataLoader(MLIPDataset(test_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
+                                         generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
+    val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
+                                        generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
     
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=lr)
     loss_fn: nn.MSELoss = nn.MSELoss()
@@ -60,19 +55,19 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
 
 def train_epoch(model: Model, dataset: utils.data.DataLoader, optimizer: optim.Optimizer, loss_fn: nn.Module, torch_device: device | None = None) -> float:
     """
-    Docstring for train_epoch
-    
-    :param model: Description
+    Train model for one epoch.
+
+    :param model: Model to be trained
     :type model: Model
-    :param dataset: Description
+    :param dataset: Training dataset DataLoader
     :type dataset: utils.data.DataLoader
-    :param optimizer: Description
+    :param optimizer: Optimizer for training
     :type optimizer: optim.Optimizer
-    :param loss_fn: Description
+    :param loss_fn: Loss function
     :type loss_fn: nn.Module
-    :param torch_device: Description
+    :param torch_device: pytorch device to use for training
     :type torch_device: device | None
-    :return: Description
+    :return: Training loss for the epoch
     :rtype: float
     """
     total_loss: float = 0.0
@@ -91,17 +86,17 @@ def train_epoch(model: Model, dataset: utils.data.DataLoader, optimizer: optim.O
 @no_grad()
 def evaluate_model(model: Model, dataset: utils.data.DataLoader, loss_fn: nn.Module, torch_device: device | None = None) -> float:
     """
-    Docstring for evaluate_model
-    
-    :param model: Description
+    Evaluate the model without computing gradients.
+
+    :param model: Model to be evaluated
     :type model: Model
-    :param dataset: Description
+    :param dataset: Evaluation dataset DataLoader
     :type dataset: utils.data.DataLoader
-    :param loss_fn: Description
+    :param loss_fn: Loss function
     :type loss_fn: nn.Module
-    :param torch_device: Description
+    :param torch_device: pytorch device to use for evaluation
     :type torch_device: device | None
-    :return: Description
+    :return: Evaluation loss
     :rtype: float
     """
     total_loss: float = 0.0
