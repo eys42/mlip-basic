@@ -1,5 +1,5 @@
 from molecule import Molecule
-from torch import set_default_dtype, set_default_device, get_default_device, float64, float32, load, backends, cuda, device, save
+from torch import set_default_dtype, set_default_device, get_default_device, float64, load, cuda, device, save, optim
 from model import Model
 from train import train_model
 from import_data import QM9DataImport
@@ -11,7 +11,7 @@ import atexit
 import sys
 
 
-def cleanup_wrapper(model: Model, chkfile: str):
+def cleanup_wrapper(model: Model, optimizer: optim.Optimizer, chkfile: str):
     """
     Generates a cleanup function to save model checkpoint and log W&B artifact on exit.
     
@@ -22,8 +22,10 @@ def cleanup_wrapper(model: Model, chkfile: str):
     """
     def cleanup() -> None:
         save(model.state_dict(), chkfile)
+        save(optimizer.state_dict(), 'optimizer_checkpoint.pt')
         artifact = wandb.Artifact('mlip-basic-qm9', type='model')
         artifact.add_file('model_checkpoint.pt')
+        artifact.add_file('optimizer_checkpoint.pt')
         wandb.log_artifact(artifact)
         wandb.finish()
         print(f'Model checkpoint saved to {chkfile} and W&B artifact logged on exit.')
@@ -72,12 +74,12 @@ if __name__ == '__main__':
     
     # initialize model
     model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
+    artifact_version = 'latest'
     if path.exists(chkfile) and not '--wandb-artifact-version' in args_dict:
         model.load_state_dict(load(chkfile))
         print(f'Loaded model checkpoint from {chkfile}')
     elif load_wandb_artifact:
         api = wandb.Api()
-        artifact_version = 'latest'
         if '--wandb-artifact-version' in args_dict:
             artifact_version = args_dict['--wandb-artifact-version']
         artifact = wandb.use_artifact(f'mlip-basic-qm9:{artifact_version}', type='model')
@@ -92,10 +94,17 @@ if __name__ == '__main__':
     else:
         set_default_device(torch_device)
         print(f'Using {torch_device.type} for training.')
-    
+
+    if torch_device is not None:
+        model = model.to(torch_device)
+    # initialize optimizer
+    optimizer: optim.Adam = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
+    if path.exists(path.join(getcwd(), 'optimizer_checkpoint.pt')):
+        optimizer.load_state_dict(load(path.join(getcwd(), 'optimizer_checkpoint.pt'), map_location=torch_device))
+        print(f'Loaded optimizer checkpoint from W&B artifact mlip-basic-qm9:{artifact_version}')
     # start wandb logging and register cleanup function
     wandb.watch(model, log_freq=100)
-    atexit.register(cleanup_wrapper(model, chkfile))
+    atexit.register(cleanup_wrapper(model, optimizer, chkfile))
 
     print('Beginning training:')
-    train_model(model, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, lr=wandb.config.learning_rate, chkfile=chkfile, torch_device=torch_device)
+    train_model(model, optimizer, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, chkfile=chkfile, torch_device=torch_device)

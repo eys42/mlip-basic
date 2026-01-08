@@ -7,7 +7,7 @@ from tqdm import tqdm
 import wandb
 manual_seed(0)
 
-def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, lr: float = 0.001, chkfile: str = 'model_checkpoint.pt', torch_device: device | None = None) -> None:
+def train_model(model: Model, optimizer: optim.Optimizer, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, chkfile: str = 'model_checkpoint.pt', torch_device: device | None = None) -> None:
     """
     Load data and train model.
     
@@ -17,8 +17,8 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
     :type dataset: list[Molecule]
     :param epochs: number of training epochs
     :type epochs: int
-    :param lr: learn rate
-    :type lr: float
+    :param optimizer: Optimizer for training
+    :type optimizer: optim.Optimizer
     :param chkfile: path to checkpoint file
     :type chkfile: str
     :param torch_device: pytorch device to use for training
@@ -34,7 +34,6 @@ def train_model(model: Model, dataset: list[Molecule], batch_size: int = 32, epo
     val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
                                         generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
     
-    optimizer: optim.Adam = optim.Adam(model.parameters(), lr=lr)
     loss_fn: nn.MSELoss = nn.MSELoss()
     if torch_device is not None:
         model = model.to(torch_device)
