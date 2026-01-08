@@ -72,7 +72,7 @@ if __name__ == '__main__':
     
     # initialize model
     model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
-    if path.exists(chkfile) and not '--load-wandb-artifact' in args_dict:
+    if path.exists(chkfile) and not '--wandb-artifact-version' in args_dict:
         model.load_state_dict(load(chkfile))
         print(f'Loaded model checkpoint from {chkfile}')
     elif load_wandb_artifact:
