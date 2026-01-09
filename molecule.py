@@ -169,7 +169,7 @@ class Molecule:
             Z_tensor[i, int(Z) - 1] = 1.0
         return Z_tensor
 
-    def generate_combined_input_tensor(self, Z_max: int = 9) -> None:
+    def generate_combined_input_tensor(self, Z_max: int = 9) -> Tensor:
         """
         Generates a combined input tensor of shape (n_atoms, Z_max + 3).
         The first Z_max columns are the one-hot encoded atomic numbers, and the last 3 columns are the x, y, z coordinates.
@@ -178,3 +178,4 @@ class Molecule:
         :type Z_max: int
         """
         self.combined_input_tensor = cat((self.one_hot_encode_Z(Z_max), self.coords.T), dim=1)
+        return self.combined_input_tensor

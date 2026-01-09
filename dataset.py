@@ -16,7 +16,7 @@ class MLIPDataset(utils.data.Dataset):
 
     # TODO: complete this method - maybe apply a random transformation to the coords??
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
-        return (self.input_tensor_list[idx], self.output_tensor_list[idx])
+        return (self.molecules[idx].apply_random_rotation().generate_combined_input_tensor(), self.output_tensor_list[idx])
     
     def __getitems__(self, idxs: list[int]) -> list[tuple[Tensor, Tensor]]:
         samples: list[tuple] = []
