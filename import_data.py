@@ -59,6 +59,7 @@ class QM9DataImport:
             properties: list[str] = lines[0].split()
             molecule: Molecule = Molecule(n_atoms, properties)
             molecule.coords_from_XYZ(lines[1:n_atoms+1])
+            molecule.translate_to_center_of_mass()
             return molecule
     
     @staticmethod
@@ -111,3 +112,11 @@ class QM9DataImport:
         print(f'Time to load dataset from .pt file: {t2 - t1:.1f} seconds')
         print(f'Number of molecules loaded: {len(dataset)}')
         return dataset
+    
+if __name__ == '__main__':
+    test_molecule = QM9DataImport.molecule_from_XYZ('dsgdb9nsd_000001.xyz', 'QM9data')
+    test_molecule.generate_distance_matrix(print_matrix=True)
+    print(test_molecule.compute_center_of_mass())
+    test_molecule.translate_to_center_of_mass()
+    print(test_molecule.compute_center_of_mass())
+    test_molecule.generate_distance_matrix(print_matrix=True)

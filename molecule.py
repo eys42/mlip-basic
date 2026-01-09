@@ -25,6 +25,9 @@ class Molecule:
         'F': 9,
     }
 
+    # exact masses in Da of most common isotopes
+    exact_mass_list = [1.007825, 4.002603, 7.016005, 9.012183, 11.009305, 12.0, 14.003074, 15.994915, 18.998403]
+
     def __init__(self, n_atoms: int, properties: list[str] | None = None) -> None:
         self.n_atoms: int = n_atoms
         if properties is not None:
@@ -68,22 +71,6 @@ class Molecule:
                 self.coords[:,i] = tensor([float(parts[1].replace('*^', 'e')),
                                            float(parts[2].replace('*^', 'e')),
                                            float(parts[3].replace('*^', 'e'))], dtype=get_default_dtype())
-                
-    def generate_distance_matrix(self, print_matrix: bool = True) -> None:
-        """
-        Generates distance matrix for the molecule.
-
-        :param print_matrix: Whether to print the distance matrix
-        :type print_matrix: bool
-        """
-        self.dist_matrix: Tensor = zeros((self.n_atoms, self.n_atoms), dtype=get_default_dtype())
-        for i in range(self.n_atoms):
-            for j in range(i, self.n_atoms):
-                dist = linalg.vector_norm(self.coords[:,i] - self.coords[:,j])
-                self.dist_matrix[i,j] = dist
-                self.dist_matrix[j,i] = dist
-        if print_matrix:
-            print(self.dist_matrix)
     
     def apply_random_rotation(self) -> 'Molecule':
         """
@@ -107,6 +94,47 @@ class Molecule:
         new_molecule: Molecule = Molecule(self.n_atoms)
         new_molecule.set_attributes(self.idx, self.properties, self.z_list.detach().clone(), new_coords)
         return new_molecule
+                
+    def compute_center_of_mass(self) -> Tensor:
+        """
+        Computes the center of mass of the molecule using exact atomic masses of the most abundant isotopes.
+
+        :return: Center of mass coordinates as a 3-element tensor
+        :rtype: Tensor
+        """
+        total_mass: float = 0.0
+        com: Tensor = zeros(3, dtype=get_default_dtype())
+        for i in range(self.n_atoms):
+            mass = self.exact_mass_list[int(self.z_list[i].item()) - 1]
+            total_mass += mass
+            com += self.coords[:, i] * mass
+        com /= total_mass
+        self.com: Tensor = com
+        return com
+    
+    def translate_to_center_of_mass(self) -> None:
+        """
+        Translates the molecule's coordinates so that the center of mass is at the origin.
+        """
+        com: Tensor = self.compute_center_of_mass().unsqueeze(1)
+        self.coords -= com
+        self.compute_center_of_mass()
+                
+    def generate_distance_matrix(self, print_matrix: bool = True) -> None:
+        """
+        Generates distance matrix for the molecule.
+
+        :param print_matrix: Whether to print the distance matrix
+        :type print_matrix: bool
+        """
+        self.dist_matrix: Tensor = zeros((self.n_atoms, self.n_atoms), dtype=get_default_dtype())
+        for i in range(self.n_atoms):
+            for j in range(i, self.n_atoms):
+                dist = linalg.vector_norm(self.coords[:,i] - self.coords[:,j])
+                self.dist_matrix[i,j] = dist
+                self.dist_matrix[j,i] = dist
+        if print_matrix:
+            print(self.dist_matrix)
     
     def apply_random_translation(self) -> 'Molecule':
         """
