@@ -1,5 +1,5 @@
 from molecule import Molecule
-from torch import set_default_dtype, set_default_device, get_default_device, float64, load, cuda, device, save, optim
+from torch import set_default_dtype, set_default_device, get_default_device, float32, load, cuda, device, save, optim
 from model import Model
 from train import train_model
 from import_data import QM9DataImport
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     
     # configure default datatype and device
     load_dotenv()
-    set_default_dtype(float64)
+    set_default_dtype(float32)
     use_cuda: bool = True
     chkfile: str = 'model_checkpoint.pt'
 

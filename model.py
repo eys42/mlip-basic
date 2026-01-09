@@ -7,7 +7,6 @@ class Model(nn.Module):
         self.embedding = nn.Linear(in_features, d_model)
         self.transformer_layer = SDPABlock(d_model=d_model, nhead=nhead, dim_feedforward=d_model*2, batch_first=True)
         self.transformer = nn.Sequential(*[self.transformer_layer for _ in range(num_layers)])
-        #self.transformer = nn.ModuleList([self.transformer_layer for _ in range(num_layers)])
         self.regressor = nn.Linear(d_model, 1)
     def forward(self, x: Tensor) -> Tensor:
         if not x.is_contiguous():

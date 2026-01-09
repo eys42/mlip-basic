@@ -4,16 +4,15 @@ from molecule import Molecule
 class MLIPDataset(utils.data.Dataset):
     def __init__(self, molecules: list[Molecule]) -> None:
         self.molecules: list[Molecule] = molecules
-        #self.U0_list: Tensor = tensor([molecule.properties[10] for molecule in molecules], dtype=get_default_dtype())
+        self.input_tensor_list: list[Tensor] = [molecule.combined_input_tensor for molecule in self.molecules]
+        self.output_tensor_list: list[Tensor] = [molecule.properties[10] for molecule in self.molecules]
 
     def __len__(self) -> int:
         return len(self.molecules)
 
     # TODO: complete this method - maybe apply a random transformation to the coords??
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
-        molecule: Molecule = self.molecules[idx]
-        # TODO: fix this behavior - start out with a transposed tensor
-        return (molecule.combined_input_tensor, molecule.properties[10])
+        return (self.input_tensor_list[idx], self.output_tensor_list[idx])
     
     def __getitems__(self, idxs: list[int]) -> list[tuple[Tensor, Tensor]]:
         samples: list[tuple] = []
