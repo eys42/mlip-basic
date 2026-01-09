@@ -108,12 +108,16 @@ if __name__ == '__main__':
     # initialize optimizer and scheduler
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
     scheduler: optim.lr_scheduler.ReduceLROnPlateau = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=0.0001)
-    if path.exists(path.join(artifact_dir, 'optimizer_checkpoint.pt')):
+    if path.exists(path.join(artifact_dir, 'optimizer_checkpoint.pt')) and not '--reset-optimizer' in args_dict:
         optimizer.load_state_dict(load(path.join(artifact_dir, 'optimizer_checkpoint.pt'), map_location=torch_device))
         print(f'Loaded optimizer checkpoint from {path.join(artifact_dir, "optimizer_checkpoint.pt")}')
+    elif '--reset-optimizer' in args_dict:
+        print('Optimizer checkpoint not loaded from artifact.')
     if path.exists(path.join(artifact_dir, 'scheduler_checkpoint.pt')) and not '--reset-scheduler' in args_dict:
         scheduler.load_state_dict(load(path.join(artifact_dir, 'scheduler_checkpoint.pt'), map_location=torch_device))
         print(f'Loaded scheduler checkpoint from {path.join(artifact_dir, "scheduler_checkpoint.pt")}')
+    elif '--reset-scheduler' in args_dict:
+        print('Scheduler checkpoint not loaded from artifact.')
     # start wandb logging and register cleanup function
     wandb.watch(model, log_freq=100)
     atexit.register(cleanup_wrapper(model, optimizer, scheduler, chkfile))
