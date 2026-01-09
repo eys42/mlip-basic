@@ -111,7 +111,7 @@ if __name__ == '__main__':
     if path.exists(path.join(artifact_dir, 'optimizer_checkpoint.pt')):
         optimizer.load_state_dict(load(path.join(artifact_dir, 'optimizer_checkpoint.pt'), map_location=torch_device))
         print(f'Loaded optimizer checkpoint from {path.join(artifact_dir, "optimizer_checkpoint.pt")}')
-    if path.exists(path.join(artifact_dir, 'scheduler_checkpoint.pt')):
+    if path.exists(path.join(artifact_dir, 'scheduler_checkpoint.pt')) and not '--reset-scheduler' in args_dict:
         scheduler.load_state_dict(load(path.join(artifact_dir, 'scheduler_checkpoint.pt'), map_location=torch_device))
         print(f'Loaded scheduler checkpoint from {path.join(artifact_dir, "scheduler_checkpoint.pt")}')
     # start wandb logging and register cleanup function
