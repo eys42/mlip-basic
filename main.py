@@ -10,7 +10,7 @@ import wandb
 import atexit
 import sys
 
-def cleanup_wrapper(model: Model, optimizer: optim.Optimizer, chkfile: str):
+def cleanup_wrapper(model: Model, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler.ReduceLROnPlateau, chkfile: str):
     """
     Returns a cleanup function to save model checkpoint and log W&B artifact on exit.
     
@@ -18,15 +18,19 @@ def cleanup_wrapper(model: Model, optimizer: optim.Optimizer, chkfile: str):
     :type model: Model
     :param optimizer: Current optimizer
     :type optimizer: optim.Optimizer
+    :param scheduler: Current learning rate scheduler
+    :type scheduler: optim.lr_scheduler.ReduceLROnPlateau
     :param chkfile: Path to checkpoint file
     :type chkfile: str
     """
     def cleanup() -> None:
         save(model.state_dict(), chkfile)
         save(optimizer.state_dict(), 'optimizer_checkpoint.pt')
+        save(scheduler.state_dict(), 'scheduler_checkpoint.pt')
         artifact = wandb.Artifact('mlip-basic-qm9', type='model')
         artifact.add_file('model_checkpoint.pt')
         artifact.add_file('optimizer_checkpoint.pt')
+        artifact.add_file('scheduler_checkpoint.pt')
         wandb.log_artifact(artifact)
         wandb.finish()
         print(f'Model checkpoint saved to {chkfile} and W&B artifact logged on exit.')
@@ -100,14 +104,18 @@ if __name__ == '__main__':
 
     if torch_device is not None:
         model = model.to(torch_device)
-    # initialize optimizer
+    # initialize optimizer and scheduler
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
+    scheduler: optim.lr_scheduler.ReduceLROnPlateau = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=0.0001)
     if path.exists(path.join(getcwd(), 'optimizer_checkpoint.pt')):
         optimizer.load_state_dict(load(path.join(getcwd(), 'optimizer_checkpoint.pt'), map_location=torch_device))
-        print(f'Loaded optimizer checkpoint from W&B artifact mlip-basic-qm9:{artifact_version}')
+        print(f'Loaded optimizer checkpoint from {path.join(getcwd(), "optimizer_checkpoint.pt")}')
+    if path.exists(path.join(getcwd(), 'scheduler_checkpoint.pt')):
+        scheduler.load_state_dict(load(path.join(getcwd(), 'scheduler_checkpoint.pt'), map_location=torch_device))
+        print(f'Loaded scheduler checkpoint from {path.join(getcwd(), "scheduler_checkpoint.pt")}')
     # start wandb logging and register cleanup function
     wandb.watch(model, log_freq=100)
-    atexit.register(cleanup_wrapper(model, optimizer, chkfile))
+    atexit.register(cleanup_wrapper(model, optimizer, scheduler, chkfile))
 
     print('Beginning training:')
-    train_model(model, optimizer, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, chkfile=chkfile, torch_device=torch_device)
+    train_model(model, optimizer, scheduler, QM9_dataset, batch_size=wandb.config.batch_size, epochs=wandb.config.epochs, chkfile=chkfile, torch_device=torch_device)

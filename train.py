@@ -7,18 +7,22 @@ from tqdm import tqdm
 import wandb
 manual_seed(0)
 
-def train_model(model: Model, optimizer: optim.Optimizer, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, chkfile: str = 'model_checkpoint.pt', torch_device: device | None = None) -> None:
+def train_model(model: Model, optimizer: optim.Optimizer, scheduler: optim.lr_scheduler.ReduceLROnPlateau, dataset: list[Molecule], batch_size: int = 32, epochs: int = 100, chkfile: str = 'model_checkpoint.pt', torch_device: device | None = None) -> None:
     """
     Load data and train model.
     
     :param model: Model to be trained
     :type model: Model
-    :param dataset: list of Molecule objects representing the QM9 dataset
-    :type dataset: list[Molecule]
-    :param epochs: number of training epochs
-    :type epochs: int
     :param optimizer: Optimizer for training
     :type optimizer: optim.Optimizer
+    :param scheduler: Learning rate scheduler for training
+    :type scheduler: optim.lr_scheduler.ReduceLROnPlateau
+    :param dataset: list of Molecule objects representing the QM9 dataset
+    :type dataset: list[Molecule]
+    :param batch_size: batch size for training
+    :type batch_size: int
+    :param epochs: number of training epochs
+    :type epochs: int
     :param chkfile: path to checkpoint file
     :type chkfile: str
     :param torch_device: pytorch device to use for training
@@ -43,6 +47,7 @@ def train_model(model: Model, optimizer: optim.Optimizer, dataset: list[Molecule
     for n in tqdm(range(1, epochs + 1)):
         train_loss: float = train_epoch(model, train_dataloader, optimizer, loss_fn, torch_device=torch_device)
         val_loss: float = evaluate_model(model, val_dataloader, loss_fn, torch_device=torch_device)
+        scheduler.step(val_loss)
         if n % 10 == 0 or n == 1 or n == epochs:
             save(model.state_dict(), chkfile)
             test_loss: float = evaluate_model(model, test_dataloader, loss_fn, torch_device=torch_device)
