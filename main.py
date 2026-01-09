@@ -82,6 +82,7 @@ if __name__ == '__main__':
     # initialize model
     model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
     artifact_version = 'latest'
+    artifact_dir = getcwd()
     if path.exists(chkfile) and not '--wandb-artifact-version' in args_dict:
         model.load_state_dict(load(chkfile))
         print(f'Loaded model checkpoint from {chkfile}')
@@ -107,12 +108,12 @@ if __name__ == '__main__':
     # initialize optimizer and scheduler
     optimizer: optim.Adam = optim.Adam(model.parameters(), lr=wandb.config.learning_rate)
     scheduler: optim.lr_scheduler.ReduceLROnPlateau = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=10, threshold=0.0001)
-    if path.exists(path.join(getcwd(), 'optimizer_checkpoint.pt')):
-        optimizer.load_state_dict(load(path.join(getcwd(), 'optimizer_checkpoint.pt'), map_location=torch_device))
-        print(f'Loaded optimizer checkpoint from {path.join(getcwd(), "optimizer_checkpoint.pt")}')
-    if path.exists(path.join(getcwd(), 'scheduler_checkpoint.pt')):
-        scheduler.load_state_dict(load(path.join(getcwd(), 'scheduler_checkpoint.pt'), map_location=torch_device))
-        print(f'Loaded scheduler checkpoint from {path.join(getcwd(), "scheduler_checkpoint.pt")}')
+    if path.exists(path.join(artifact_dir, 'optimizer_checkpoint.pt')):
+        optimizer.load_state_dict(load(path.join(artifact_dir, 'optimizer_checkpoint.pt'), map_location=torch_device))
+        print(f'Loaded optimizer checkpoint from {path.join(artifact_dir, "optimizer_checkpoint.pt")}')
+    if path.exists(path.join(artifact_dir, 'scheduler_checkpoint.pt')):
+        scheduler.load_state_dict(load(path.join(artifact_dir, 'scheduler_checkpoint.pt'), map_location=torch_device))
+        print(f'Loaded scheduler checkpoint from {path.join(artifact_dir, "scheduler_checkpoint.pt")}')
     # start wandb logging and register cleanup function
     wandb.watch(model, log_freq=100)
     atexit.register(cleanup_wrapper(model, optimizer, scheduler, chkfile))
