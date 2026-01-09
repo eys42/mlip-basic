@@ -27,9 +27,9 @@ def train_model(model: Model, optimizer: optim.Optimizer, dataset: list[Molecule
     # make train, test, val splits (train = 80%, test = 10%, val = 10%)
     train_molecules, test_molecules = train_test_split(dataset, test_size=0.2, random_state=0, shuffle=False)
     test_molecules, val_molecules = train_test_split(test_molecules, test_size=0.5, random_state=0, shuffle=False)
-    train_dataset = MLIPDataset(train_molecules)
-    test_dataset = MLIPDataset(test_molecules)
-    val_dataset = MLIPDataset(val_molecules)
+    train_dataset = MLIPDataset(train_molecules, move_to_device=(torch_device is not None))
+    test_dataset = MLIPDataset(test_molecules, move_to_device=(torch_device is not None))
+    val_dataset = MLIPDataset(val_molecules, move_to_device=(torch_device is not None))
     train_dataloader = utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_nested,
                                           generator=Generator(device='cpu'), pin_memory=True, num_workers=8, persistent_workers=True)
     test_dataloader = utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_nested,

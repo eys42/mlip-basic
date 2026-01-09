@@ -2,10 +2,14 @@ from torch import utils, Tensor, get_default_dtype, nested, jagged, stack, get_d
 from molecule import Molecule
 
 class MLIPDataset(utils.data.Dataset):
-    def __init__(self, molecules: list[Molecule]) -> None:
+    def __init__(self, molecules: list[Molecule], move_to_device: bool = False) -> None:
         self.molecules: list[Molecule] = molecules
         self.input_tensor_list: list[Tensor] = [molecule.combined_input_tensor for molecule in self.molecules]
         self.output_tensor_list: list[Tensor] = [molecule.properties[10] for molecule in self.molecules]
+        if move_to_device:
+            device = get_default_device()
+            self.input_tensor_list = [tensor.to(device) for tensor in self.input_tensor_list]
+            self.output_tensor_list = [tensor.to(device) for tensor in self.output_tensor_list]
 
     def __len__(self) -> int:
         return len(self.molecules)
