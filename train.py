@@ -1,5 +1,5 @@
 from sklearn.model_selection import train_test_split
-from torch import nn, utils, optim, save, load, no_grad, manual_seed, get_default_device, randn, Generator, device
+from torch import nn, utils, optim, save, load, no_grad, manual_seed, Generator, device
 from model import Model
 from dataset import MLIPDataset, collate_nested
 from molecule import Molecule
@@ -44,10 +44,16 @@ def train_model(model: Model, optimizer: optim.Optimizer, scheduler: optim.lr_sc
     loss_fn: nn.MSELoss = nn.MSELoss()
     if torch_device is not None:
         model = model.to(torch_device)
+    running_lr = optimizer.param_groups[0]['lr']
+    print(f'Starting training for {epochs} epochs with initial learning rate {running_lr}')
     for n in tqdm(range(1, epochs + 1)):
         train_loss: float = train_epoch(model, train_dataloader, optimizer, loss_fn, torch_device=torch_device)
         val_loss: float = evaluate_model(model, val_dataloader, loss_fn, torch_device=torch_device)
         scheduler.step(val_loss)
+        current_lr = optimizer.param_groups[0]['lr']
+        if current_lr != running_lr:
+            print(f'Learning rate changed from {running_lr} to {current_lr} at epoch {n}')
+            running_lr = current_lr
         if n % 10 == 0 or n == 1 or n == epochs:
             save(model.state_dict(), chkfile)
             test_loss: float = evaluate_model(model, test_dataloader, loss_fn, torch_device=torch_device)
