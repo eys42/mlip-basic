@@ -27,29 +27,32 @@ def train_model(model: Model, optimizer: optim.Optimizer, dataset: list[Molecule
     # make train, test, val splits (train = 80%, test = 10%, val = 10%)
     train_molecules, test_molecules = train_test_split(dataset, test_size=0.2, random_state=0, shuffle=False)
     test_molecules, val_molecules = train_test_split(test_molecules, test_size=0.5, random_state=0, shuffle=False)
-    train_dataset = utils.data.DataLoader(MLIPDataset(train_molecules), batch_size=batch_size, shuffle=True, collate_fn=collate_nested,
-                                          generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
-    test_dataset = utils.data.DataLoader(MLIPDataset(test_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
-                                         generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
-    val_dataset = utils.data.DataLoader(MLIPDataset(val_molecules), batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
-                                        generator=Generator(device='cpu'), pin_memory=True, num_workers=4)
+    train_dataset = MLIPDataset(train_molecules)
+    test_dataset = MLIPDataset(test_molecules)
+    val_dataset = MLIPDataset(val_molecules)
+    train_dataloader = utils.data.DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_nested,
+                                          generator=Generator(device='cpu'), pin_memory=True, num_workers=8, persistent_workers=True)
+    test_dataloader = utils.data.DataLoader(test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
+                                         generator=Generator(device='cpu'), pin_memory=True, num_workers=8, persistent_workers=True)
+    val_dataloader = utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_nested,
+                                        generator=Generator(device='cpu'), pin_memory=True, num_workers=8, persistent_workers=True)
     
     loss_fn: nn.MSELoss = nn.MSELoss()
     if torch_device is not None:
         model = model.to(torch_device)
     for n in tqdm(range(1, epochs + 1)):
-        train_loss: float = train_epoch(model, train_dataset, optimizer, loss_fn, torch_device=torch_device)
-        val_loss: float = evaluate_model(model, val_dataset, loss_fn, torch_device=torch_device)
+        train_loss: float = train_epoch(model, train_dataloader, optimizer, loss_fn, torch_device=torch_device)
+        val_loss: float = evaluate_model(model, val_dataloader, loss_fn, torch_device=torch_device)
         if n % 10 == 0 or n == 1 or n == epochs:
             save(model.state_dict(), chkfile)
-            test_loss: float = evaluate_model(model, test_dataset, loss_fn, torch_device=torch_device)
+            test_loss: float = evaluate_model(model, test_dataloader, loss_fn, torch_device=torch_device)
             print(f'Epoch {n:03d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2), Test loss={test_loss:.4f} (MSE, Ha^2)')
             wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss, 'test_loss': test_loss})
         else:
             print(f'Epoch {n:03d}: Training loss={train_loss:.4f} (MSE, Ha^2), Validation loss={val_loss:.4f} (MSE, Ha^2)')
             wandb.log({'epoch': n, 'train_loss': train_loss, 'val_loss': val_loss})
     model.load_state_dict(load(chkfile))
-    test_loss: float = evaluate_model(model, test_dataset, loss_fn, torch_device=torch_device)
+    test_loss: float = evaluate_model(model, test_dataloader, loss_fn, torch_device=torch_device)
     print(f'Test loss={test_loss:.4f} (MSE, Ha^2)')
 
 def train_epoch(model: Model, dataset: utils.data.DataLoader, optimizer: optim.Optimizer, loss_fn: nn.Module, torch_device: device | None = None) -> float:
