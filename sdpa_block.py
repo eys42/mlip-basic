@@ -22,26 +22,24 @@ class SDPABlock(nn.Module):
             nn.GELU(),
             nn.Linear(dim_feedforward, d_model)
         )
-    
+
+    def reshape_heads(self, t: Tensor, batch_size: int) -> Tensor:
+        return t.reshape(batch_size, -1, self.nhead, self.head_dim).transpose(1, 2)
+
     def forward(self, x: Tensor) -> Tensor:
-        result = x.clone()
-        x = self.norm1(x)
-        q = self.q_proj(x)
-        k = self.k_proj(x)
-        v = self.v_proj(x)
+        result = x
+        x_normed = self.norm1(x)
+        q = self.q_proj(x_normed)
+        k = self.k_proj(x_normed)
+        v = self.v_proj(x_normed)
 
         batch_size = x.size(0)
-        
-        # Helper to reshape: (Batch, Atoms, d_model) -> (Batch, Atoms, nhead, head_dim)
-        def reshape_heads(t):
-            return t.reshape(batch_size, -1, self.nhead, self.head_dim).transpose(1, 2)
-
-        q = reshape_heads(q)
-        k = reshape_heads(k)
-        v = reshape_heads(v)
+        q = self.reshape_heads(q, batch_size)
+        k = self.reshape_heads(k, batch_size)
+        v = self.reshape_heads(v, batch_size)
         
         attn_out = F.scaled_dot_product_attention(q, k, v)
         attn_out = attn_out.transpose(1, 2).reshape(batch_size, -1, self.d_model)
-        x = result + self.out_proj(attn_out)
-        x += self.feedforward(self.norm2(x))
-        return x
+        result += self.out_proj(attn_out)
+        result += self.feedforward(self.norm2(x))
+        return result
