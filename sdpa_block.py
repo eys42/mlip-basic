@@ -24,7 +24,7 @@ class SDPABlock(nn.Module):
         )
     
     def forward(self, x: Tensor) -> Tensor:
-        result = x
+        result = x.clone()
         x = self.norm1(x)
         q = self.q_proj(x)
         k = self.k_proj(x)
@@ -40,9 +40,8 @@ class SDPABlock(nn.Module):
         k = reshape_heads(k)
         v = reshape_heads(v)
         
-        #q, k, v = [t.transpose(1, 2) for t in (q, k, v)]
         attn_out = F.scaled_dot_product_attention(q, k, v)
         attn_out = attn_out.transpose(1, 2).reshape(batch_size, -1, self.d_model)
         x = result + self.out_proj(attn_out)
-        x = x + self.feedforward(self.norm2(x))
+        x += self.feedforward(self.norm2(x))
         return x
