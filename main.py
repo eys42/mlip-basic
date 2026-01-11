@@ -46,6 +46,7 @@ if __name__ == '__main__':
         'learning_rate': float(args_dict.get('--learning-rate', 0.001)),
         'nhead': int(args_dict.get('--nhead', 4)),
         'd_model': int(args_dict.get('--d-model', 64)),
+        'dim_feedforward': int(args_dict.get('--dim-feedforward', 128)),
         'num_layers': int(args_dict.get('--num-layers', 4)),
         'Z_MAX': int(args_dict.get('--Z-MAX', 9))
     }
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         QM9DataImport.save_dataset_to_pt(QM9_dataset)
     
     # initialize model
-    model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, num_layers=wandb.config.num_layers)
+    model: Model = Model(in_features=wandb.config.Z_MAX + 3, nhead=wandb.config.nhead, d_model=wandb.config.d_model, dim_feedforward=wandb.config.dim_feedforward, num_layers=wandb.config.num_layers)
     artifact_version = 'latest'
     artifact_dir = getcwd()
     if path.exists(chkfile) and not '--wandb-artifact-version' in args_dict:
