@@ -13,6 +13,7 @@ class Model(nn.Module):
             x = x.contiguous()
         h = self.embedding(x)
         h_out = self.transformer(h)
+        h_out_padded = h_out.to_padded_tensor(padding=0.0)
         # sum across the atom dimension (dim=1)
-        pooled = h_out.sum(dim=1)
+        pooled = h_out_padded.sum(dim=1)
         return self.regressor(pooled)
