@@ -41,5 +41,5 @@ class SDPABlock(nn.Module):
         attn_out = F.scaled_dot_product_attention(q, k, v)
         attn_out = attn_out.transpose(1, 2).reshape(batch_size, -1, self.d_model)
         x = result + self.out_proj(attn_out)
-        x += self.feedforward(self.norm2(x))
+        x = x + self.feedforward(self.norm2(x))
         return x
