@@ -28,10 +28,10 @@ class SDPABlock(nn.Module):
 
     def forward(self, x: Tensor) -> Tensor:
         result = x
-        x_normed = self.norm1(x)
-        q = self.q_proj(x_normed)
-        k = self.k_proj(x_normed)
-        v = self.v_proj(x_normed)
+        x = self.norm1(x)
+        q = self.q_proj(x)
+        k = self.k_proj(x)
+        v = self.v_proj(x)
 
         batch_size = x.size(0)
         q = self.reshape_heads(q, batch_size)
@@ -40,6 +40,6 @@ class SDPABlock(nn.Module):
         
         attn_out = F.scaled_dot_product_attention(q, k, v)
         attn_out = attn_out.transpose(1, 2).reshape(batch_size, -1, self.d_model)
-        result += self.out_proj(attn_out)
-        result += self.feedforward(self.norm2(x))
-        return result
+        x = result + self.out_proj(attn_out)
+        x += self.feedforward(self.norm2(x))
+        return x
