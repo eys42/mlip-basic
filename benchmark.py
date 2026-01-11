@@ -28,7 +28,7 @@ if __name__ == '__main__':
         'nhead': 4,
         'd_model': 64,
         'num_layers': 4,
-        'batch_size': int(args_dict.get('--batch-size', 32)),
+        'batch_size': int(args_dict.get('--batch-size', 64)),
         'Z_MAX': 9,
         'n_evals': int(args_dict.get('--n-evals', 10)),
         'artifact_version': args_dict.get('--wandb-artifact-version', 'latest')
@@ -39,7 +39,7 @@ if __name__ == '__main__':
             path.join(getcwd(), 'QM9_dataset.pt'),
             generate_combined_input_tensor=True, Z_max=config['Z_MAX'])
     else:
-        QM9_dataset = QM9DataImport.import_data_from_XYZ(
+        QM9_dataset = QM9DataImport.load_dataset_from_XYZ(
             'QM9data',
             generate_combined_input_tensor=True, Z_max=config['Z_MAX'])
         QM9DataImport.save_dataset_to_pt(QM9_dataset)

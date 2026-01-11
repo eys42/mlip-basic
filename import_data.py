@@ -5,7 +5,7 @@ from torch import load, save
 
 class QM9DataImport:
     @staticmethod
-    def import_data_from_XYZ(folder: str, generate_combined_input_tensor: bool = False, Z_max: int = 9) -> list[Molecule]:
+    def load_dataset_from_XYZ(folder: str, generate_combined_input_tensor: bool = False, Z_max: int = 9) -> list[Molecule]:
         """
         Imports the entire QM9 dataset from XYZ files in the given folder.
 

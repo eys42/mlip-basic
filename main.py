@@ -74,7 +74,7 @@ if __name__ == '__main__':
             path.join(getcwd(), 'QM9_dataset.pt'),
             generate_combined_input_tensor=True, Z_max=wandb.config.Z_MAX)
     else:
-        QM9_dataset = QM9DataImport.import_data_from_XYZ(
+        QM9_dataset = QM9DataImport.load_dataset_from_XYZ(
             'QM9data',
             generate_combined_input_tensor=True, Z_max=wandb.config.Z_MAX)
         QM9DataImport.save_dataset_to_pt(QM9_dataset)

@@ -1,4 +1,4 @@
-from torch import utils, Tensor, get_default_dtype, nested, jagged, stack, get_default_device
+from torch import utils, Tensor, get_default_dtype, nested, jagged, stack, get_default_device, nn
 from molecule import Molecule
 
 class MLIPDataset(utils.data.Dataset):
